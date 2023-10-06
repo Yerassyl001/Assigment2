@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Rock-Paper-Scissors Game</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            text-align: center;
+        }
+        .container {
+            margin-top: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Rock-Paper-Scissors Game</h1>
+    <div class="container">
+        <button id="createGame">Create Game</button>
+        <label for="move">Select Your Move:</label>
+        <select id="move">
+            <option value="0">-- Select Move --</option>
+            <option value="1">Rock</option>
+            <option value="2">Paper</option>
+            <option value="3">Scissors</option>
+        </select>
+        <button id="playGame">Play Game</button>
+        <div id="result"></div>
+        <div id="gameHistory">
+            <h2>Game History</h2>
+            <ul id="historyList"></ul>
+        </div>
+    </div>
+
+    <script>
+        const createGameButton = document.getElementById("createGame");
+        const moveSelect = document.getElementById("move");
+        const playGameButton = document.getElementById("playGame");
+        const resultDiv = document.getElementById("result");
+        const historyList = document.getElementById("historyList");
+
+        // Replace with your contract's address
+        const contractAddress = "0x688D558abDf80Cd84484b45dD37BFd8c7C789235";
+
+        // Web3.js setup (use the web3.js version compatible with your BSC network)
+        const web3 = new Web3("https://bsc-dataseed.binance.org/");
+        const contractABI = [...]; // Replace with your contract's ABI
+        const contract = new web3.eth.Contract(contractABI, contractAddress);
+
+        createGameButton.addEventListener("click", async () => {
+            try {
+                const accounts = await web3.eth.requestAccounts();
+                const sender = accounts[0];
+
+                await contract.methods.createGame().send({ from: sender, value: web3.utils.toWei("0.0001", "ether") });
+                resultDiv.innerHTML = "Game created successfully!";
+            } catch (error) {
+                console.error(error);
+                resultDiv.innerHTML = "Error creating game.";
+            }
+        });
+
+        playGameButton.addEventListener("click", async () => {
+            const selectedMove = moveSelect.value;
+            if (selectedMove === "0") {
+                resultDiv.innerHTML = "Please select a move.";
+                return;
+            }
+
+            try {
+                const accounts = await web3.eth.requestAccounts();
+                const sender = accounts[0];
+
+                const randomMove = Math.floor(Math.random() * 3) + 1;
+
+                const response = await contract.methods.playGame(selectedMove, randomMove).send({ from: sender });
+                const playerWins = response.events.GamePlayed.returnValues.playerWins;
+
+                if (playerWins) {
+                    resultDiv.innerHTML = "You won!";
+                } else {
+                    resultDiv.innerHTML = "You lost!";
+                }
+
+                // Update game history
+                const gameId = response.events.GamePlayed.returnValues.gameId;
+                historyList.innerHTML += `<li>Game ID: ${gameId}, Player Move: ${selectedMove}, Random Move: ${randomMove}, Result: ${playerWins ? "Win" : "Loss"}</li>`;
+            } catch (error) {
+                console.error(error);
+                resultDiv.innerHTML = "Error playing game.";
+            }
+        });
+    </script>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/web3/1.5.2/web3.min.js"></script>
+</body>
+</html>
